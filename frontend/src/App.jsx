@@ -159,6 +159,16 @@ function App() {
               <div>Loan Term: {p.loan_term_years} years</div>
               <div>Monthly Rent: ${p.monthly_rental_income}</div>
               <div>Monthly Expenses: ${p.monthly_expenses}</div>
+
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed #ccc" }}>
+                <strong>Metrics</strong>
+                <div>Monthly Mortgage Payment: ${p.metrics.monthly_mortgage_payment.toFixed(2)}</div>
+                <div>Cap Rate: {p.metrics.cap_rate.toFixed(2)}%</div>
+                <div>Monthly Cash Flow: ${p.metrics.monthly_cash_flow.toFixed(2)}</div>
+                <div>ROI: {p.metrics.roi.toFixed(2)}%</div>
+                <div>Break-Even Ratio: {p.metrics.break_even_ratio.toFixed(2)}%</div>
+              </div>
+
               <div>
                 <button onClick={() => startEditing(p)}>Edit</button>
                 <button onClick={() => deleteProperty(p.id)}>Delete</button>
