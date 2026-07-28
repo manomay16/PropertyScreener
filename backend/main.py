@@ -6,11 +6,11 @@ from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 from database import get_db
-from schemas import PropertyCreate, PropertyUpdate, PropertyOut
+from schemas import PropertyCreate, PropertyUpdate, PropertyOut, PropertyWithMetrics
 import models
 from fastapi.middleware.cors import CORSMiddleware
+from calculators import calculate_all_metrics
 load_dotenv()
-
 app = FastAPI()
 
 app.add_middleware(
@@ -51,13 +51,18 @@ def create_property(property_data: PropertyCreate, request: Request, db: Session
     return new_property
 
 
-@app.get("/properties", response_model=list[PropertyOut])
+@app.get("/properties", response_model=list[PropertyWithMetrics])
 def list_properties(request: Request, db: Session = Depends(get_db)):
     session_id = get_session_id(request)
-    return db.query(models.Property).filter(models.Property.session_id == session_id).all()
+    props = db.query(models.Property).filter(models.Property.session_id == session_id).all()
+    result = []
+    for p in props:
+        metrics = calculate_all_metrics(p)
+        result.append(PropertyWithMetrics(**PropertyOut.model_validate(p).model_dump(), metrics=metrics))
+    return result
 
 
-@app.get("/properties/{property_id}", response_model=PropertyOut)
+@app.get("/properties/{property_id}", response_model=PropertyWithMetrics)
 def get_property(property_id: int, request: Request, db: Session = Depends(get_db)):
     session_id = get_session_id(request)
     prop = db.query(models.Property).filter(
@@ -66,7 +71,8 @@ def get_property(property_id: int, request: Request, db: Session = Depends(get_d
     ).first()
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
-    return prop
+    metrics = calculate_all_metrics(prop)
+    return PropertyWithMetrics(**PropertyOut.model_validate(prop).model_dump(), metrics=metrics)
 
 
 @app.put("/properties/{property_id}", response_model=PropertyOut)

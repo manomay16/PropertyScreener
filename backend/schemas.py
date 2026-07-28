@@ -37,3 +37,14 @@ class PropertyOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PropertyMetrics(BaseModel):
+    monthly_mortgage_payment: float
+    cap_rate: float
+    monthly_cash_flow: float
+    roi: float
+    break_even_ratio: float
+
+
+class PropertyWithMetrics(PropertyOut):
+    metrics: PropertyMetrics
