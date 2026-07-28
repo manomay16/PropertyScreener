@@ -1,122 +1,87 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from "react";
+
+const API_URL = "http://localhost:8000";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [properties, setProperties] = useState([]);
+  const [form, setForm] = useState({
+    address: "",
+    purchase_price: "",
+    down_payment: "",
+    loan_interest_rate: "",
+    loan_term_years: "",
+    monthly_rental_income: "",
+    monthly_expenses: "",
+  });
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  function fetchProperties() {
+    fetch(`${API_URL}/properties`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setProperties(data));
+  }
+
+  function handleChange(e) {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    fetch(`${API_URL}/properties`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address: form.address,
+        purchase_price: parseFloat(form.purchase_price),
+        down_payment: parseFloat(form.down_payment),
+        loan_interest_rate: parseFloat(form.loan_interest_rate),
+        loan_term_years: parseInt(form.loan_term_years),
+        monthly_rental_income: parseFloat(form.monthly_rental_income),
+        monthly_expenses: parseFloat(form.monthly_expenses),
+      }),
+    }).then(() => {
+      fetchProperties();
+      setForm({
+        address: "",
+        purchase_price: "",
+        down_payment: "",
+        loan_interest_rate: "",
+        loan_term_years: "",
+        monthly_rental_income: "",
+        monthly_expenses: "",
+      });
+    });
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ maxWidth: 500, margin: "40px auto", fontFamily: "sans-serif" }}>
+      <h1>Property Screener</h1>
 
-      <div className="ticks"></div>
+      <form onSubmit={handleSubmit}>
+        <input name="address" placeholder="Address" value={form.address} onChange={handleChange} required />
+        <input name="purchase_price" placeholder="Purchase Price" value={form.purchase_price} onChange={handleChange} required />
+        <input name="down_payment" placeholder="Down Payment" value={form.down_payment} onChange={handleChange} required />
+        <input name="loan_interest_rate" placeholder="Interest Rate (%)" value={form.loan_interest_rate} onChange={handleChange} required />
+        <input name="loan_term_years" placeholder="Loan Term (years)" value={form.loan_term_years} onChange={handleChange} required />
+        <input name="monthly_rental_income" placeholder="Monthly Rental Income" value={form.monthly_rental_income} onChange={handleChange} required />
+        <input name="monthly_expenses" placeholder="Monthly Expenses" value={form.monthly_expenses} onChange={handleChange} required />
+        <button type="submit">Add Property</button>
+      </form>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <h2>Your Properties</h2>
+      <ul>
+        {properties.map((p) => (
+          <li key={p.id}>
+            {p.address} — ${p.purchase_price}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
-export default App
+export default App;
