@@ -6,6 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 from database import get_db
+from geocoding import geocode_address
 from schemas import PropertyCreate, PropertyUpdate, PropertyOut, PropertyWithMetrics
 import models
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,7 +45,20 @@ def whoami(request: Request):
 @app.post("/properties", response_model=PropertyOut)
 def create_property(property_data: PropertyCreate, request: Request, db: Session = Depends(get_db)):
     session_id = get_session_id(request)
-    new_property = models.Property(session_id=session_id, **property_data.model_dump())
+
+    try:
+        geocode_result = geocode_address(property_data.address)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not reach the geocoding service. Please try again.")
+
+    if geocode_result is None:
+        raise HTTPException(status_code=400, detail="Could not verify this address. Please check it and try again.")
+
+    new_property = models.Property(
+        session_id=session_id,
+        census_tract=geocode_result["census_tract"],
+        **property_data.model_dump(),
+    )
     db.add(new_property)
     db.commit()
     db.refresh(new_property)
