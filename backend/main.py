@@ -2,6 +2,8 @@ import os
 import uuid
 from dotenv import load_dotenv
 from schemas import ScoreOut
+from calculators import calculate_all_metrics
+from risk_scoring import calculate_leverage_risk, calculate_cash_flow_risk, calculate_composite_risk_score
 from fastapi import FastAPI, Request
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
@@ -137,15 +139,25 @@ def create_score(property_id: int, request: Request, db: Session = Depends(get_d
     ).first()
     disaster_risk_score = fema_data.risk_score if fema_data else None
 
+    metrics = calculate_all_metrics(prop)
+    leverage_risk = calculate_leverage_risk(prop.down_payment, prop.purchase_price)
+    cash_flow_risk = calculate_cash_flow_risk(metrics["monthly_cash_flow"], prop.monthly_rental_income)
+    composite_score = calculate_composite_risk_score(
+        disaster_risk_score,
+        metrics["break_even_ratio"],
+        leverage_risk,
+        cash_flow_risk,
+    )
+
     new_score = models.Score(
         property_id=property_id,
         disaster_risk_score=disaster_risk_score,
+        ml_risk_score=composite_score,
     )
     db.add(new_score)
     db.commit()
     db.refresh(new_score)
     return new_score
-
 
 @app.get("/properties/{property_id}/scores", response_model=list[ScoreOut])
 def list_scores(property_id: int, request: Request, db: Session = Depends(get_db)):
