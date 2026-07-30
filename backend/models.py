@@ -47,3 +47,10 @@ class Score(Base):
     computed_at = Column(DateTime(timezone=True), server_default=func.now())
 
     property = relationship("Property", back_populates="scores")
+
+
+class FemaRisk(Base):
+    __tablename__ = "fema_risk"
+
+    census_tract = Column(String, primary_key=True)
+    risk_score = Column(Float)
