@@ -48,3 +48,15 @@ class PropertyMetrics(BaseModel):
 
 class PropertyWithMetrics(PropertyOut):
     metrics: PropertyMetrics
+
+
+class ScoreOut(BaseModel):
+    id: int
+    property_id: int
+    disaster_risk_score: Optional[float] = None
+    ml_risk_score: Optional[float] = None
+    explanation: Optional[str] = None
+    computed_at: datetime
+
+    class Config:
+        from_attributes = True

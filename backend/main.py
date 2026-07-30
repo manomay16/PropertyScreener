@@ -1,6 +1,7 @@
 import os
 import uuid
 from dotenv import load_dotenv
+from schemas import ScoreOut
 from fastapi import FastAPI, Request
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
@@ -120,3 +121,40 @@ def delete_property(property_id: int, request: Request, db: Session = Depends(ge
     db.delete(prop)
     db.commit()
     return {"detail": "Property deleted"}
+
+@app.post("/properties/{property_id}/score", response_model=ScoreOut)
+def create_score(property_id: int, request: Request, db: Session = Depends(get_db)):
+    session_id = get_session_id(request)
+    prop = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.session_id == session_id
+    ).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    fema_data = db.query(models.FemaRisk).filter(
+        models.FemaRisk.census_tract == prop.census_tract
+    ).first()
+    disaster_risk_score = fema_data.risk_score if fema_data else None
+
+    new_score = models.Score(
+        property_id=property_id,
+        disaster_risk_score=disaster_risk_score,
+    )
+    db.add(new_score)
+    db.commit()
+    db.refresh(new_score)
+    return new_score
+
+
+@app.get("/properties/{property_id}/scores", response_model=list[ScoreOut])
+def list_scores(property_id: int, request: Request, db: Session = Depends(get_db)):
+    session_id = get_session_id(request)
+    prop = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.session_id == session_id
+    ).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    return db.query(models.Score).filter(models.Score.property_id == property_id).all()
