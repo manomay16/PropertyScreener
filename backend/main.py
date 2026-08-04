@@ -4,6 +4,7 @@ import joblib
 import shap
 import pandas as pd
 from dotenv import load_dotenv
+from explanation_generator import generate_explanation
 from schemas import ScoreOut
 from calculators import calculate_all_metrics
 from risk_scoring import calculate_leverage_risk, calculate_cash_flow_risk, calculate_composite_risk_score
@@ -165,12 +166,15 @@ def create_score(property_id: int, request: Request, db: Session = Depends(get_d
     ml_risk_score = float(risk_model.predict(feature_row)[0])
     shap_result = shap_explainer.shap_values(feature_row)
     shap_dict = {feature: float(value) for feature, value in zip(model_features, shap_result[0])}
+    raw_values = feature_row.iloc[0].to_dict()
+    explanation_text = generate_explanation(ml_risk_score, disaster_risk_score, shap_dict, raw_values)
 
     new_score = models.Score(
         property_id=property_id,
         disaster_risk_score=disaster_risk_score,
         ml_risk_score=ml_risk_score,
         shap_values=shap_dict,
+        explanation=explanation_text,
     )
     db.add(new_score)
     db.commit()
