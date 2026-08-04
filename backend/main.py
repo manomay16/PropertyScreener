@@ -1,5 +1,8 @@
 import os
 import uuid
+import joblib
+import shap
+import pandas as pd
 from dotenv import load_dotenv
 from schemas import ScoreOut
 from calculators import calculate_all_metrics
@@ -16,6 +19,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from calculators import calculate_all_metrics
 load_dotenv()
 app = FastAPI()
+risk_model = joblib.load("risk_model.joblib")
+model_features = joblib.load("model_features.joblib")
+shap_explainer = shap.TreeExplainer(risk_model)
 
 app.add_middleware(
     CORSMiddleware,
@@ -140,19 +146,31 @@ def create_score(property_id: int, request: Request, db: Session = Depends(get_d
     disaster_risk_score = fema_data.risk_score if fema_data else None
 
     metrics = calculate_all_metrics(prop)
-    leverage_risk = calculate_leverage_risk(prop.down_payment, prop.purchase_price)
-    cash_flow_risk = calculate_cash_flow_risk(metrics["monthly_cash_flow"], prop.monthly_rental_income)
-    composite_score = calculate_composite_risk_score(
-        disaster_risk_score,
-        metrics["break_even_ratio"],
-        leverage_risk,
-        cash_flow_risk,
-    )
+
+    feature_row = pd.DataFrame([{
+        "purchase_price": prop.purchase_price,
+        "down_payment": prop.down_payment,
+        "loan_interest_rate": prop.loan_interest_rate,
+        "loan_term_years": prop.loan_term_years,
+        "monthly_rental_income": prop.monthly_rental_income,
+        "monthly_expenses": prop.monthly_expenses,
+        "disaster_risk_score": disaster_risk_score if disaster_risk_score is not None else 50,
+        "monthly_mortgage_payment": metrics["monthly_mortgage_payment"],
+        "cap_rate": metrics["cap_rate"],
+        "monthly_cash_flow": metrics["monthly_cash_flow"],
+        "roi": metrics["roi"],
+        "break_even_ratio": metrics["break_even_ratio"],
+    }])[model_features]
+
+    ml_risk_score = float(risk_model.predict(feature_row)[0])
+    shap_result = shap_explainer.shap_values(feature_row)
+    shap_dict = {feature: float(value) for feature, value in zip(model_features, shap_result[0])}
 
     new_score = models.Score(
         property_id=property_id,
         disaster_risk_score=disaster_risk_score,
-        ml_risk_score=composite_score,
+        ml_risk_score=ml_risk_score,
+        shap_values=shap_dict,
     )
     db.add(new_score)
     db.commit()

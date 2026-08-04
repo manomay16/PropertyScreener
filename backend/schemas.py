@@ -56,6 +56,7 @@ class ScoreOut(BaseModel):
     disaster_risk_score: Optional[float] = None
     ml_risk_score: Optional[float] = None
     explanation: Optional[str] = None
+    shap_values: Optional[dict] = None
     computed_at: datetime
 
     class Config:
