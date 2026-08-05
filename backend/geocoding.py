@@ -22,8 +22,14 @@ def geocode_address(address: str):
     latitude = match["coordinates"]["y"]
     longitude = match["coordinates"]["x"]
 
+    address_components = match["addressComponents"]
+    city = address_components.get("city", "")
+    state = address_components.get("state", "")
+
     return {
         "census_tract": census_tract,
         "latitude": latitude,
         "longitude": longitude,
+        "city": city,
+        "state": state,
     }
