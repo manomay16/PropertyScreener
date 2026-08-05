@@ -4,6 +4,7 @@ import joblib
 import shap
 import pandas as pd
 from dotenv import load_dotenv
+from sentiment import get_area_sentiment
 from explanation_generator import generate_explanation
 from schemas import ScoreOut
 from calculators import calculate_all_metrics
@@ -167,8 +168,11 @@ def create_score(property_id: int, request: Request, db: Session = Depends(get_d
     shap_result = shap_explainer.shap_values(feature_row)
     shap_dict = {feature: float(value) for feature, value in zip(model_features, shap_result[0])}
     raw_values = feature_row.iloc[0].to_dict()
-    explanation_text = generate_explanation(ml_risk_score, disaster_risk_score, shap_dict, raw_values)
-
+    geocode_result = geocode_address(prop.address)
+    sentiment_data = None
+    if geocode_result:
+        sentiment_data = get_area_sentiment(geocode_result["city"], geocode_result["state"])
+    explanation_text = generate_explanation(ml_risk_score, disaster_risk_score, shap_dict, raw_values, sentiment_data)
     new_score = models.Score(
         property_id=property_id,
         disaster_risk_score=disaster_risk_score,

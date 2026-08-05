@@ -17,7 +17,7 @@ def get_risk_tier(score):
         return "high"
 
 
-def generate_explanation(ml_risk_score, disaster_risk_score, shap_values, raw_values):
+def generate_explanation(ml_risk_score, disaster_risk_score, shap_values, raw_values, sentiment_data=None):
     top_contributors = sorted(shap_values.items(), key=lambda x: abs(x[1]), reverse=True)[:4]
 
     contributor_lines = []
@@ -32,10 +32,16 @@ def generate_explanation(ml_risk_score, disaster_risk_score, shap_values, raw_va
 
     risk_tier = get_risk_tier(ml_risk_score)
 
+    if sentiment_data:
+        sentiment_line = f"Local news sentiment: {sentiment_data['average_sentiment']:.2f} (scale -1 to +1, based on {sentiment_data['article_count']} recent articles)"
+    else:
+        sentiment_line = "Local news sentiment: unavailable"
+
     prompt = f"""You are explaining a property investment risk score to an investor.
 
 Risk score: {ml_risk_score:.1f}/100 ({risk_tier} risk)
 Disaster risk score (FEMA data): {disaster_risk_score if disaster_risk_score is not None else "unavailable"}
+{sentiment_line}
 
 Top factors driving this score, in order of impact:
 {chr(10).join(contributor_lines)}
@@ -43,7 +49,9 @@ Top factors driving this score, in order of impact:
 Write a 3-4 sentence explanation for the investor, in plain language. Use ONLY the
 numbers and factors provided above — do not invent, assume, or reference any
 information not explicitly given here. Do not mention SHAP, models, or technical
-ML terminology. Focus on what an investor would actually care about."""
+ML terminology. If local sentiment data is available, briefly mention whether it's
+positive or negative as additional context, without treating it as a primary risk
+driver. Focus on what an investor would actually care about."""
 
     response = client.models.generate_content(
         model="gemini-3.6-flash",
