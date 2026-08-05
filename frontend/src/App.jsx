@@ -20,6 +20,10 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyForm);
 
+  const [scores, setScores] = useState({});
+  const [loadingScoreId, setLoadingScoreId] = useState(null);
+  const [scoreErrors, setScoreErrors] = useState({});
+
   useEffect(() => {
     fetchProperties();
   }, []);
@@ -64,7 +68,7 @@ function App() {
     setEditingId(property.id);
     setEditForm({
       address: property.address,
-      purchase_price: property.purchase_price,
+      purchase_price: propertpurchase_price,
       down_payment: property.down_payment,
       loan_interest_rate: property.loan_interest_rate,
       loan_term_years: property.loan_term_years,
@@ -114,6 +118,28 @@ function App() {
     }).then((res) => {
       if (res.ok) fetchProperties();
     });
+  }
+
+  function getScore(propertyId) {
+    setLoadingScoreId(propertyId);
+    setScoreErrors({ ...scoreErrors, [propertyId]: null });
+
+    fetch(`${API_URL}/properties/${propertyId}/score`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to compute score");
+        return res.json();
+      })
+      .then((data) => {
+        setScores({ ...scores, [propertyId]: data });
+      setLoadingScoreId(null);
+      })
+      .catch(() => {
+        setScoreErrors({ ...scoreErrors, [propertyId]: "Could not compute a risk score. Please try again." });
+        setLoadingScoreId(null);
+      });
   }
 
   return (
@@ -169,7 +195,28 @@ function App() {
                 <div>Break-Even Ratio: {p.metrics.break_even_ratio.toFixed(2)}%</div>
               </div>
 
-              <div>
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed #ccc" }}>
+                <button onClick={() => getScore(p.id)} disabled={loadingScoreId === p.id}>
+                  {loadingScoreId === p.id ? "Computing..." : "Get Risk Score"}
+                </button>
+
+                {scoreErrors[p.id] && <p style={{ color: "red" }}>{scoreErrors[p.id]}</p>}
+
+                {scores[p.id] && (
+                  <div style={{ marginTop: 8 }}>
+                    <div><strong>Risk Score:</strong> {scores[p.id].ml_risk_score?.toFixed(1)} / 100</div>
+                    <div>
+                      <strong>Disaster Risk:</strong>{" "}
+                      {scores[p.id].disaster_risk_score !== null
+                        ? scores[p.id].disaster_risk_score.toFixed(1)
+                        : "Unavailable"}
+                    </div>
+                    <p>{scores[p.id].explanation}</p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginTop: 8 }}>
                 <button onClick={() => startEditing(p)}>Edit</button>
                 <button onClick={() => deleteProperty(p.id)}>Delete</button>
               </div>
