@@ -1,0 +1,17 @@
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "_e3a9a0e8a43f507995360013da40aaf1.api.propertyscreener.xyz.",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "_d57edb0f68cc1c0d176d1fb5ffe8ec9c.wzccmgtwzk.acm-validations.aws."
+          }
+        ]
+      }
+    }
+  ]
+}

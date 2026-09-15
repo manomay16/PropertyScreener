@@ -1,0 +1,28 @@
+{
+  "CallerReference": "propertyscreener-2026",
+  "Comment": "PropertyScreener frontend",
+  "DefaultRootObject": "index.html",
+  "Enabled": true,
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "propertyscreener-s3-origin",
+        "DomainName": "propertyscreener-frontend-597595166836.s3.us-east-1.amazonaws.com",
+        "OriginAccessControlId": "E16D169L9W9KCW",
+        "S3OriginConfig": {
+          "OriginAccessIdentity": ""
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "propertyscreener-s3-origin",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET", "HEAD"]
+    },
+    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
+  }
+}

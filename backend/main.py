@@ -27,14 +27,18 @@ shap_explainer = shap.TreeExplainer(risk_model)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "https://d1aumifzxyizpx.cloudfront.net"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
-
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SECRET_KEY"),
+    same_site="none",
+    https_only=True,
+)
 
 def get_session_id(request: Request) -> str:
     if "session_id" not in request.session:
@@ -141,6 +145,13 @@ def create_score(property_id: int, request: Request, db: Session = Depends(get_d
     ).first()
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
+    
+    latest_score = db.query(models.Score).filter(
+        models.Score.property_id == property_id
+    ).order_by(models.Score.computed_at.desc()).first()
+
+    if latest_score and prop.updated_at and latest_score.computed_at >= prop.updated_at:
+        return latest_score
 
     fema_data = db.query(models.FemaRisk).filter(
         models.FemaRisk.census_tract == prop.census_tract

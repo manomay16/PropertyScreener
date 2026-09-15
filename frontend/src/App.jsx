@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const API_URL = "http://localhost:8000";
+const API_URL = "https://api.propertyscreener.xyz";
 
 const emptyForm = {
   address: "",
@@ -68,7 +68,7 @@ function App() {
     setEditingId(property.id);
     setEditForm({
       address: property.address,
-      purchase_price: propertpurchase_price,
+      purchase_price: property.purchase_price,
       down_payment: property.down_payment,
       loan_interest_rate: property.loan_interest_rate,
       loan_term_years: property.loan_term_years,

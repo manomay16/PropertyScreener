@@ -18,9 +18,10 @@ class Property(Base):
     monthly_rental_income = Column(Float)
     monthly_expenses = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    cost_history = relationship("CostHistory", back_populates="property")
-    scores = relationship("Score", back_populates="property")
+    cost_history = relationship("CostHistory", back_populates="property", cascade="all, delete-orphan")
+    scores = relationship("Score", back_populates="property", cascade="all, delete-orphan")
 
 
 class CostHistory(Base):

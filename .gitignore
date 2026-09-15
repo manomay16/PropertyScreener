@@ -3,7 +3,9 @@ venv/
 __pycache__/
 *.pyc
 .env
-
+task-definition.json
+cookies.txt
+full_log.txt
 # Node / React
 node_modules/
 dist/
